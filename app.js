@@ -5,7 +5,7 @@ const getPaymentSession = require('./services/get-payment-session');
 const postPaymentSession = require('./services/post-payment-session');
 
 const app = express();
-const PORT = 3000;
+const { PORT } = process.env;
 
 app.use(express.json(), (err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
