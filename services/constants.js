@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8856";
+const { API_BASE_URL } = process.env;
 
 module.exports = {
   API_BASE_URL,
