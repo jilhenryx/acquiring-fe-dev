@@ -173,6 +173,11 @@
         });
 
         const data = await response.json();
+
+        if (data.status === "error") {
+          throw new Error(data.message)
+        }
+
         const paymentRecord = data.data
 
         console.log(`Complete session response ${paymentRecord.current_step}`)
@@ -203,8 +208,12 @@
             const eventData = JSON.parse(event.data)
             const completeReqData = {};
 
+            console.log("Event Data Raw ", event.data)
+            console.log("Event Data Status ", eventData.Status)
+            console.log("Event Data SessionId ", eventData.SessionId)
+
             if (eventData.Status && eventData.SessionId) {
-              completeReqData.dcc_collection_reference = event.data.SessionId;
+              completeReqData.dcc_collection_reference = eventData.SessionId;
             }
 
             await completePayment(completeReqData);
