@@ -6,7 +6,7 @@ async function postPaymentSession(req, res) {
 
   try {
     const response = await axios.patch(
-      `${API_BASE_URL}/payments/${ref}`,
+      `${API_BASE_URL}/payments/${ref}/sessions`,
       req.body
     );
 

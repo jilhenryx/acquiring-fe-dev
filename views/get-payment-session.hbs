@@ -166,7 +166,7 @@
       console.log(JSON.stringify(reqData || {}))
 
       try {
-        const response = await fetch(`${API_BASE}/payments/${paymentRef}`, {
+        const response = await fetch(`${API_BASE}/payments/${paymentRef}/sessions`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reqData || {})
