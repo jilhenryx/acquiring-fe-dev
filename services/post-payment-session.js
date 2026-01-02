@@ -10,7 +10,7 @@ async function postPaymentSession(req, res) {
       req.body
     );
 
-    const { redirect_url, current_step } = response.data.data.data;
+    const { redirect_url, current_step } = response.data.data;
 
     res.render('post-payment-session', {
       currentStep: current_step,

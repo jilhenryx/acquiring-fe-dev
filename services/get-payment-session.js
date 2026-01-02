@@ -9,7 +9,7 @@ async function getPaymentSession(req, res) {
       `${API_BASE_URL}/payments/${ref}/sessions`
     );
 
-    const { session_data, current_step } = response.data.data.data;
+    const { session_data, current_step } = response.data.data;
 
     res.render('get-payment-session', {
       title: 'Redirecting to payment...',
@@ -25,7 +25,7 @@ async function getPaymentSession(req, res) {
         .join('&'),
     });
   } catch (error) {
-    console.error(error);
+    console.log(error);
     const message = error.response?.data?.message;
     res.render('app-error', {
       title: 'Error',
