@@ -7,14 +7,15 @@ async function postPaymentSession(req, res) {
   try {
     const response = await axios.patch(
       `${API_BASE_URL}/payments/${ref}/sessions`,
-      req.body
+      { threeds_result: req.body.cres }
     );
 
-    const { redirect_url, current_step } = response.data.data;
+    const { redirect_url, current_step, failure_reason } = response.data.data;
 
     res.render('post-payment-session', {
       currentStep: current_step,
       redirectURL: redirect_url,
+      failureReason: failure_reason,
     });
   } catch (error) {
     console.error(error);

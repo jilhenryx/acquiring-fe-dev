@@ -3,6 +3,7 @@ const path = require('path');
 const exphbs = require('express-handlebars');
 const getPaymentSession = require('./services/get-payment-session');
 const postPaymentSession = require('./services/post-payment-session');
+const handleRedirectToCore = require('./services/handle-redirect-to-core');
 
 const app = express();
 const { PORT } = process.env;
@@ -37,6 +38,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.get('/payment-sessions/:ref', getPaymentSession);
 app.post('/payment-sessions/:ref', postPaymentSession);
+app.get('/payment-actions/:intentActionId', handleRedirectToCore);
 
 // Start server
 app.listen(PORT, () => {

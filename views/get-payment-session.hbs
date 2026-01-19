@@ -188,7 +188,7 @@
         } else if (paymentRecord.current_step === 'payment_approved') {
           showSuccess(paymentRecord);
         } else {
-          showError(data.message || 'Payment completion failed');
+          showError(paymentRecord.failure_reason || 'Payment completion failed', paymentRecord);
         }
       } catch (error) {
         console.error('Error completing payment:', error);
@@ -213,7 +213,7 @@
             console.log("Event Data SessionId ", eventData.SessionId)
 
             if (eventData.Status && eventData.SessionId) {
-              completeReqData.dcc_collection_reference = eventData.SessionId;
+              completeReqData.threeds_result = eventData.SessionId;
             }
 
             await completePayment(completeReqData);
@@ -268,7 +268,7 @@
       }
     }
 
-    function showError(message) {
+    function showError(message, paymentData) {
       document.getElementById('content').innerHTML = `
         <div class="icon error-icon">✕</div>
         <h1>Authentication Failed</h1>
@@ -276,7 +276,15 @@
         <div class="status-message error">
           <div class="status-text error">Payment could not be completed</div>
         </div>
+        <p class="redirect-message">Redirecting you back to the merchant...</p>
       `;
+
+      // Redirect after 3 seconds
+      if (paymentData?.redirect_url) {
+        setTimeout(() => {
+          window.location.href = paymentData.redirect_url;
+        }, 3000);
+      }
     }
   </script>
 </body>

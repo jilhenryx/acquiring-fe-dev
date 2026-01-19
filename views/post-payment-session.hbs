@@ -150,12 +150,13 @@
   <script>
     const currentStep = "{{currentStep}}"
     const redirectURL = "{{redirectURL}}"
+    const failureReason = "{{failureReason}}"
 
 
     if (currentStep === 'payment_approved') {
       showSuccess();
     } else {
-      showError('Payment completion failed');
+      showError(failureReason || 'Payment completion failed');
     }
 
 
@@ -187,7 +188,15 @@
         <div class="status-message error">
           <div class="status-text error">Payment could not be completed</div>
         </div>
+        <p class="redirect-message">Redirecting you back to the merchant...</p>
       `;
+
+      // Redirect after 3 seconds
+      if (redirectURL) {
+        setTimeout(() => {
+          window.location.href = redirectURL;
+        }, 3000);
+      }
     }
   </script>
 </body>
