@@ -31,7 +31,8 @@ async function handleRedirectToCore(req, res) {
 
     res.redirect(redirectURL);
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
+    console.log('error-data', error.response?.data);
     const message = error.response?.data?.message;
     res.render('app-error', {
       title: 'Error',
