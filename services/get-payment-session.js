@@ -1,10 +1,12 @@
 const { default: axios } = require('axios');
-const { API_BASE_URL } = require('./constants');
+const getBEURL = require('./get-be-urls');
 
 async function getPaymentSession(req, res) {
   const { ref } = req.params;
 
   try {
+    const API_BASE_URL = getBEURL({ req, key: 'API_BASE_URL' });
+
     const response = await axios.get(
       `${API_BASE_URL}/payments/${ref}/sessions`
     );

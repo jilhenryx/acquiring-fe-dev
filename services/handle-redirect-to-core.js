@@ -1,5 +1,4 @@
 const { default: axios } = require('axios');
-const { CORE_BASE_URL } = require('./constants');
 
 /**
  *
@@ -10,6 +9,8 @@ async function handleRedirectToCore(req, res) {
   const { intentActionId } = req.params;
 
   try {
+    const CORE_BASE_URL = getBEURL({ req, key: 'CORE_BASE_URL' });
+
     const response = await axios.post(
       `${CORE_BASE_URL}/intent-verifications/${intentActionId}`,
       req.body
