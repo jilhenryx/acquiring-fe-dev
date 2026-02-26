@@ -1,0 +1,505 @@
+<html>
+
+<head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+        Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding:
+        3rem 2rem;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 2rem;
+      position: relative;
+    }
+
+    .spinner::before {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 60px;
+      border: 4px solid #f3f4f6;
+      border-radius: 50%;
+    }
+
+    .spinner::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 60px;
+      border: 4px solid #667eea;
+      border-top-color: transparent;
+      border-radius: 50%;
+      position:
+        absolute;
+      top: 0;
+      left: 0;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    h1 {
+      color: #1f2937;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color:
+        #6b7280;
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .status-message {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    .status-message.error {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    .status-message.success {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .status-text {
+      color: #16a34a;
+      font-weight: 500;
+    }
+
+    .status-text.error {
+      color: #dc2626;
+    }
+
+    .icon {
+      font-size: 48px;
+      margin-bottom: 1rem;
+    }
+
+    .success-icon {
+      color: #16a34a;
+    }
+
+    .error-icon {
+      color: #dc2626;
+    }
+
+    .redirect-message {
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 1rem;
+    }
+
+    .google-button {
+      margin: 2rem auto;
+    }
+    #json-container {
+      text-align: left;
+      width: 100%;
+      overflow-x: scroll;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container" class="container">
+    <div id="content">
+      {{!-- <div class="spinner"></div> --}}
+      <h1>Initiate Payment</h1>
+      {{!-- <p>Please wait while we securely authenticate your payment with
+        Google...</p> --}}
+      <div id="google-button-container" class="google-button"></div>
+      <p style="font-size: 14px; color: #9ca3af;">Do not close this window or
+        press the back button.</p>
+    </div>
+    <p style="font-weight: bold; width: 100%; text-align: left; font-size: 16px; color: #0a1b38; margin-bottom: 0;">Payload:</p>
+    <div id="json-container"></div>
+  </div>
+  <script>
+    /** 
+     * Define the version of the Google Pay API referenced when creating your 
+     * configuration 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#PaymentDataRequest|apiVersion in PaymentDataRequest} 
+     */
+    const baseRequest = {
+      apiVersion: 2,
+      apiVersionMinor: 0
+    };
+    /** 
+     * Card networks supported by your site and your gateway 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters} 
+     * @todo confirm card networks supported by your site and gateway 
+     */
+    const allowedCardNetworks = ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"];
+    /** 
+     * Card authentication methods supported by your site and your gateway 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters} 
+     * @todo confirm your processor supports Android device tokens for your 
+     * supported card networks 
+     */
+    const allowedCardAuthMethods = ["PAN_ONLY", "CRYPTOGRAM_3DS"];
+    /** 
+     * Identify your gateway and your site's gateway merchant identifier 
+     * 
+     * The Google Pay API response will return an encrypted payment method capable 
+     * of being charged by a supported gateway after payer authorization 
+     * 
+     * @todo check with your gateway on the parameters to pass 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#gateway|PaymentMethodTokenizationSpecification} 
+     */
+    const tokenizationSpecification = {
+      type: 'PAYMENT_GATEWAY',
+      parameters: {
+        'gateway': 'convergepay',     // This MUST be set to convergepay 
+        'gatewayMerchantId': '{{gatewayMerchantId}}'   // The Terminal ID you obtained from Elavon Support must be used here 
+      }
+    };
+    /** 
+  * Describe your site's support for the CARD payment method and its required 
+  * fields 
+  * 
+  * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters} 
+  */
+    const baseCardPaymentMethod = {
+      type: 'CARD',
+      parameters: {
+        allowedAuthMethods: allowedCardAuthMethods,
+        allowedCardNetworks: allowedCardNetworks,
+        billingAddressRequired: true,
+        billingAddressParameters: { format: 'FULL' }
+      }
+    };
+    /** 
+    * Describe your site's support for the CARD payment method including optional 
+    * fields 
+    * 
+    * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters} 
+    */
+    const cardPaymentMethod = Object.assign(
+      {},
+      baseCardPaymentMethod,
+      {
+        tokenizationSpecification: tokenizationSpecification
+      }
+    );
+    /** 
+ * An initialized google.payments.api.PaymentsClient object or null if not yet set 
+ * 
+ * @see {@link getGooglePaymentsClient} 
+ */
+    let paymentsClient = null;
+
+    /** 
+     * Configure your site's support for payment methods supported by the Google Pay 
+     * API. 
+     * 
+     * Each member of allowedPaymentMethods should contain only the required fields, 
+     * allowing reuse of this base request when determining a viewer's ability 
+     * to pay and later requesting a supported payment method 
+     * 
+     * @returns {object} Google Pay API version, payment methods supported by the site 
+     */
+    function getGoogleIsReadyToPayRequest() {
+      return Object.assign(
+        {},
+        baseRequest,
+        {
+          allowedPaymentMethods: [baseCardPaymentMethod]
+        }
+      );
+    }
+
+    /** 
+     * Configure support for the Google Pay API 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#PaymentDataRequest|PaymentDataRequest} 
+     * @returns {object} PaymentDataRequest fields 
+     */
+    function getGooglePaymentDataRequest() {
+      const paymentDataRequest = Object.assign({}, baseRequest);
+      paymentDataRequest.allowedPaymentMethods = [cardPaymentMethod];
+      paymentDataRequest.transactionInfo = getGoogleTransactionInfo();
+      paymentDataRequest.merchantInfo = {
+        // @todo a merchant ID is available for a production environment after approval by Google 
+        // See {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist|Integration checklist} 
+        // merchantId: '12345678901234567890', 
+        merchantName: 'Example Merchant', // The merchant Name that you registered with Google Business Console must go here 
+        merchantOrigin: 'www.yourwebsite.com', // The merchant website that you registered with Google Business Console must go here 
+        merchantId: '12345678901234567890' // test value gotten from google - The Merchant ID that is available on the Google Business Console must be used here 
+      };
+      return paymentDataRequest;
+    }
+
+
+    /** 
+     * Return an active PaymentsClient or initialize 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/client#PaymentsClient|PaymentsClient constructor} 
+     * @returns {google.payments.api.PaymentsClient} Google Pay API client 
+     */
+    function getGooglePaymentsClient() {
+      if (paymentsClient === null) {
+        paymentsClient = new google.payments.api.PaymentsClient({ environment: 'TEST' }); // TEST or PRODUCTION
+      }
+      return paymentsClient;
+    }
+
+    /** 
+     * Initialize Google PaymentsClient after Google-hosted JavaScript has loaded 
+     * 
+     * Display a Google Pay payment button after confirmation of the viewer's 
+     * ability to pay. 
+     */
+    function onGooglePayLoaded() {
+      const paymentsClient = getGooglePaymentsClient();
+      paymentsClient.isReadyToPay(getGoogleIsReadyToPayRequest())
+        .then(function (response) {
+          if (response.result) {
+            addGooglePayButton();
+            // @todo prefetch payment data to improve performance after confirming site functionality 
+            // prefetchGooglePaymentData(); 
+          }
+        })
+        .catch(function (err) {
+          // show error in developer console for debugging 
+          console.error(err);
+        });
+    }
+
+
+    /** 
+     * Add a Google Pay purchase button alongside an existing checkout button 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#ButtonOptions|Button options} 
+     * @see {@link https://developers.google.com/pay/api/web/guides/brand-guidelines|Google Pay brand guidelines} 
+     */
+    function addGooglePayButton() {
+      const paymentsClient = getGooglePaymentsClient();
+      const button =
+        paymentsClient.createButton({
+          onClick: onGooglePaymentButtonClicked,
+          allowedPaymentMethods: [baseCardPaymentMethod]
+        });
+      document.getElementById('google-button-container').appendChild(button);
+    }
+
+    /** 
+     * Provide Google Pay API with a payment amount, currency, and amount status 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#TransactionInfo|TransactionInfo} 
+     * @returns {object} transaction info, suitable for use as transactionInfo property of PaymentDataRequest 
+     */
+    function getGoogleTransactionInfo() {
+      return {
+        countryCode: 'US',
+        currencyCode: '{{currencyCode}}',
+        totalPriceStatus: 'FINAL',
+        // set to cart total price same as the amount in XML API 
+        totalPrice: '{{totalPrice}}'
+      };
+    }
+
+    /** 
+     * Prefetch payment data to improve performance 
+     * 
+     * @see {@link https://developers.google.com/pay/api/web/reference/client#prefetchPaymentData|prefetchPaymentData()} 
+     */
+    function prefetchGooglePaymentData() {
+      const paymentDataRequest = getGooglePaymentDataRequest();
+      // transactionInfo must be set but does not affect cache 
+      paymentDataRequest.transactionInfo = {
+        totalPriceStatus: 'NOT_CURRENTLY_KNOWN',
+        currencyCode: 'USD'
+      };
+      const paymentsClient = getGooglePaymentsClient();
+      paymentsClient.prefetchPaymentData(paymentDataRequest);
+    }
+
+    /** 
+
+     * Show Google Pay payment sheet when Google Pay payment button is clicked 
+     */
+    function onGooglePaymentButtonClicked() {
+      const paymentDataRequest = getGooglePaymentDataRequest();
+      paymentDataRequest.transactionInfo = getGoogleTransactionInfo();
+
+      const paymentsClient = getGooglePaymentsClient();
+      paymentsClient.loadPaymentData(paymentDataRequest)
+        .then(function (paymentData) {
+          // handle the response 
+          processPayment(paymentData);
+        })
+        .catch(function (err) {
+          // show error in developer console for debugging 
+          console.error(err);
+        });
+    }
+
+    function showSuccess() {
+      document.getElementById('content').innerHTML = `
+        <div class="icon success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Your payment has been processed successfully.</p>
+        <div class="status-message success">
+          <div class="status-text">Authentication completed</div>
+        </div>
+        <p class="redirect-message">Redirecting you back to the merchant...</p>
+      `;
+    }
+
+    function showError(message) {
+      document.getElementById('content').innerHTML = `
+        <div class="icon error-icon">✕</div>
+        <h1>Authentication Failed</h1>
+        <p>${message}</p>
+        <div class="status-message error">
+          <div class="status-text error">Payment could not be completed</div>
+        </div>
+        <p class="redirect-message">Redirecting you back to the merchant...</p>
+      `;
+    }
+
+    function renderJSONTree(container, obj) {
+      const pre = document.createElement("pre");
+      pre.style.fontFamily = "monospace";
+      pre.style.fontSize = "13px";
+
+      function build(value) {
+        if (typeof value !== "object" || value === null) {
+          return document.createTextNode(JSON.stringify(value));
+        }
+
+        const details = document.createElement("details");
+        details.open = false;
+
+        const summary = document.createElement("summary");
+        summary.textContent = Array.isArray(value) ? "Array" : "Object";
+        details.appendChild(summary);
+
+        Object.entries(value).forEach(([key, val]) => {
+          const div = document.createElement("div");
+          div.style.marginLeft = "16px";
+
+          const keySpan = document.createElement("span");
+          keySpan.textContent = key + ": ";
+          keySpan.style.color = "#3b82f6";
+
+          div.appendChild(keySpan);
+          div.appendChild(build(val));
+          details.appendChild(div);
+        });
+
+        return details;
+      }
+
+      pre.appendChild(build(obj));
+      container.appendChild(pre);
+    }
+
+    const API_BASE = "{{apiBaseURL}}";
+    const paymentRef = "{{paymentRef}}";
+    async function completePayment(completeReqData) {
+      try {
+        const response = await fetch(`${API_BASE}/payments/${paymentRef}/sessions`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            // this won't happen in staging or production. 
+            // this request would go to core with bearer token, 
+            // then core to acquiring with the integrator secret
+            // 'Authorization': `Bearer clnt_01KFGCK8FG876S8ST7BEV26A61` 
+          },
+          body: JSON.stringify(completeReqData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Payment completion failed');
+        }
+
+        const paymentData = await response.json();
+        console.log(paymentData)
+        if (paymentData.data.status === 'failed') {
+          throw new Error(paymentData.data.failure_reason || 'Payment completion failed');
+        }
+
+        return paymentData;
+
+      } catch (error) {
+        console.error('Error completing payment:', error.message);
+        throw error;
+      }
+    }
+
+    /** 
+     * Process payment data returned by the Google Pay API 
+     * 
+     * @param {object} paymentData response from Google Pay API after user approves payment 
+     * @see {@link https://developers.google.com/pay/api/web/reference/response-objects#PaymentData|PaymentData object reference} 
+     */
+    function processPayment(paymentData) {
+      // show returned data in developer console for debugging 
+      console.log(paymentData);
+      showResult(paymentData);
+      // @todo pass payment token to your gateway to process payment 
+      // paymentToken = paymentData.paymentMethodData.tokenizationData.token;
+      completePayment({ google_pay_token: JSON.stringify(paymentData) })
+        .then((paymentResponse) => showSuccess())
+        .catch((error) => showError(error.message || 'Payment completion failed'));
+    }
+
+    function showResult(paymentData) {
+      // document.getElementById('payload').innerHTML = JSON.stringify(paymentData);
+      renderJSONTree(
+        document.getElementById("json-container"),
+        paymentData
+      );
+    }
+
+  </script>
+  <script async src="https://pay.google.com/gp/p/js/pay.js" onload="onGooglePayLoaded()"></script>
+</body>
+
+</html>

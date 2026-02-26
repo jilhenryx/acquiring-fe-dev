@@ -11,6 +11,7 @@ async function postPaymentSession(req, res) {
       `${API_BASE_URL}/payments/${ref}/sessions`,
       { threeds_result: req.body.cres }
     );
+    console.log('Post payment session', response.data)
 
     const { redirect_url, current_step, failure_reason } = response.data.data;
 
@@ -20,7 +21,8 @@ async function postPaymentSession(req, res) {
       failureReason: failure_reason,
     });
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
+    console.log('error-data', error.response?.data);
     const message = error.response?.data?.message;
     res.render('app-error', {
       title: 'Error',
