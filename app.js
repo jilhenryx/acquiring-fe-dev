@@ -38,11 +38,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.get('/payment-sessions/:ref', getPaymentSession);
 app.post('/payment-sessions/:ref', postPaymentSession);
+app.get('/card-sessions/:ref', getPaymentSession);
+app.post('/card-sessions/:ref', postPaymentSession);
 app.get('/payment-actions/:intentActionId', handleRedirectToCore);
 
 // Prod
 app.get('/prod/payment-sessions/:ref', getPaymentSession);
 app.post('/prod/payment-sessions/:ref', postPaymentSession);
+app.get('/prod/card-sessions/:ref', getPaymentSession);
+app.post('/prod/card-sessions/:ref', postPaymentSession);
 app.get('/prod/payment-actions/:intentActionId', handleRedirectToCore);
 
 // Start server
